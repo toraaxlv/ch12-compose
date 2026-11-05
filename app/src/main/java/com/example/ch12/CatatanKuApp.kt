@@ -3,7 +3,10 @@ package com.example.ch12
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -28,6 +31,9 @@ fun CatatanKuApp(
     val user by sessionViewModel.currentUser.collectAsStateWithLifecycle()
     val profile by sessionViewModel.profile.collectAsStateWithLifecycle()
     val isSignedIn = user != null
+
+    // Hasil kamera dititipkan di sini sampai layar profil mengambilnya.
+    var capturedPhoto by rememberSaveable { mutableStateOf<String?>(null) }
 
     // startDestination hanya dibaca sekali saat NavHost pertama dibuat
     val startDestination = remember {
@@ -73,6 +79,8 @@ fun CatatanKuApp(
 
         composable(Routes.Profile.route) {
             ProfileRoute(
+                capturedPhoto = capturedPhoto,
+                onCapturedPhotoConsumed = { capturedPhoto = null },
                 onNavigateBack = { navController.popBackStack() },
                 onOpenCamera = { navController.navigate(Routes.Camera.route) }
             )
@@ -81,8 +89,12 @@ fun CatatanKuApp(
         composable(Routes.Camera.route) {
             CameraRoute(
                 onPhotoCaptured = { uri ->
-                    // Ditulis ke SavedStateHandle milik layar profil, lalu kembali
-                    navController.previousBackStackEntry?.savedStateHandle?.set(KEY_CAPTURED_PHOTO, uri)
+                    // Dititipkan ke state layar profil, lalu kembali.
+                    // SavedStateHandle milik NavBackStackEntry ternyata BUKAN instance
+                    // yang sama dengan yang dipegang ProfileViewModel (Hilt), jadi
+                    // hasil kamera tidak pernah sampai. rememberSaveable di sini
+                    // tetap bertahan saat rotasi/process death.
+                    capturedPhoto = uri
                     navController.popBackStack()
                 },
                 onNavigateBack = { navController.popBackStack() }
