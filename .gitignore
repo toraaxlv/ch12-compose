@@ -15,3 +15,7 @@ captures/
 
 # Log Firebase CLI/Emulator
 *-debug.log
+
+# Isi app/google-services.json di repo ini placeholder.
+# File asli dari Firebase Console disimpan lokal dan disembunyikan dengan:
+#   git update-index --assume-unchanged app/google-services.json
