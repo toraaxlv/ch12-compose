@@ -2,15 +2,21 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // TODO [T4.6] Aturan ini BOCOR: siapa pun yang login bisa membaca dan
-    // MENIMPA foto profil orang lain, dengan ukuran dan tipe berkas apa pun.
-    // Ganti dengan:
-    //   - function isOwner(userId): request.auth != null && request.auth.uid == userId
-    //   - read : hanya pemilik
-    //   - write: pemilik && request.resource.size < 1 * 1024 * 1024
-    //            && request.resource.contentType == 'image/jpeg'
+    // Autentikasi bukan otorisasi: uid di path harus sama dengan pemilik token.
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Berkas yang diterima: JPEG dan < 1 MB. Batas ini yang mencegah
+    // seseorang memakai bucket sebagai tempat penyimpanan gratis.
+    function isValidPhoto() {
+      return request.resource.size < 1 * 1024 * 1024
+          && request.resource.contentType == 'image/jpeg';
+    }
+
     match /users/{userId}/profile.jpg {
-      allow read, write: if request.auth != null;
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && isValidPhoto();
     }
   }
 }
