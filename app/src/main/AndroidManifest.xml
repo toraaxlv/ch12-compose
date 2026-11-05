@@ -5,12 +5,15 @@
     <!-- Normal: diberikan otomatis saat instalasi -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- TODO [T3.1] Deklarasikan izin dangerous CAMERA:
-           <uses-permission android:name="android.permission.CAMERA" />
-         Tanpa deklarasi ini, permintaan runtime LANGSUNG ditolak tanpa dialog.
-         Tambahkan juga <uses-feature android:name="android.hardware.camera.any"
-         android:required="false" /> agar aplikasi tetap bisa dipasang di perangkat
-         tanpa kamera (galeri tetap jalan). -->
+    <!-- Dangerous: harus diminta saat runtime, DAN saat tombol Kamera diketuk.
+         Tanpa deklarasi di sini, permintaan runtime langsung ditolak tanpa dialog. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Kamera opsional: perangkat tanpa kamera tetap bisa memasang aplikasi
+         dan memakai galeri. -->
+    <uses-feature
+        android:name="android.hardware.camera.any"
+        android:required="false" />
 
     <!-- Galeri TIDAK butuh READ_MEDIA_IMAGES: Photo Picker adalah delegasi. -->
 

@@ -15,18 +15,21 @@ fun decodedSizeBytes(width: Int, height: Int): Long = width.toLong() * height * 
 // inSampleSize = n berarti hanya 1 dari n piksel (per sisi) yang didekode.
 // Dipilih pangkat 2 terbesar yang membuat sisi TERPENDEK masih >= reqSize,
 // karena foto profil dipotong persegi dari sisi terpendek.
-// TODO [T4.1] Mulai dari 1; selama minOf(width, height) / (inSampleSize * 2) >= reqSize,
-//   kalikan inSampleSize dengan 2. Contoh: (4000, 3000, 400) -> 4.
-fun calculateInSampleSize(width: Int, height: Int, reqSize: Int): Int =
-    TODO("T4.1 calculateInSampleSize")
+fun calculateInSampleSize(width: Int, height: Int, reqSize: Int): Int {
+    var inSampleSize = 1
+    while (minOf(width, height) / (inSampleSize * 2) >= reqSize) {
+        inSampleSize *= 2
+    }
+    return inSampleSize
+}
 
 data class SquareCrop(val left: Int, val top: Int, val size: Int)
 
 // Persegi terbesar di tengah gambar
-// TODO [T6.1] (Tantangan) size = sisi terpendek; left/top = sisa lebar/tinggi dibagi 2.
-//   Contoh: (4000, 3000) -> SquareCrop(left = 500, top = 0, size = 3000).
-fun centerSquare(width: Int, height: Int): SquareCrop =
-    TODO("T6.1 centerSquare")
+fun centerSquare(width: Int, height: Int): SquareCrop {
+    val size = minOf(width, height)
+    return SquareCrop(left = (width - size) / 2, top = (height - size) / 2, size = size)
+}
 
 fun formatBytes(bytes: Long): String = when {
     bytes < 1024 -> "$bytes B"
