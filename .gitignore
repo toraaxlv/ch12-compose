@@ -12,3 +12,6 @@ app/build/
 captures/
 .externalNativeBuild/
 .cxx/
+
+# Log Firebase CLI/Emulator
+*-debug.log
