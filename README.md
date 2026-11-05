@@ -197,25 +197,49 @@ Rules Playground (perkecil dulu; jangan commit gambar besar).
 
 ## Laporan (Tugas 5)
 
-> Isi bagian ini. Hapus teks petunjuk dalam tanda kurung.
-
 ### Alur izin kamera aplikasiku
 
 ```
-(Gambar alurmu di sini, mulai dari "pengguna mengetuk Kamera" sampai semua
- kemungkinan akhir: kamera terbuka, Snackbar galeri, dialog Pengaturan.
- Sebutkan fungsi/kontrak yang menangani tiap langkah.)
+Ketuk "Kamera"  (ProfileScreen -> ProfileRoute.onTakePhoto)
+        |
+        v
+cameraClickAction(context.hasCameraPermission(),
+                  context.shouldShowCameraRationale())
+        |
+        +-- OpenCamera --------> CameraRoute  (CameraX, izin sudah ada)
+        +-- ShowRationale -----> dialog "Izinkan akses kamera?"
+        |                          +-- "Lanjutkan"    -> requestCamera.launch(CAMERA)
+        |                          +-- "Pakai galeri" -> Photo Picker (degradasi)
+        +-- RequestPermission -> dialog izin sistem
+                                   |
+                    permissionResultAction(isGranted, shouldShowRationale())
+                                   |
+                    +-- OpenCamera    -> CameraRoute
+                    +-- ShowDenied    -> Snackbar "pakai galeri saja"
+                    +-- OpenSettings  -> dialog "Buka Pengaturan" -> openAppSettings()
 ```
+
+Fungsi/kontrak yang menangani tiap langkah:
+
+- `Context.hasCameraPermission()` dan `Context.shouldShowCameraRationale()` membaca fakta dari sistem, dipanggil ulang setiap kali tombol Kamera diketuk (izin bisa dicabut kapan saja).
+- `cameraClickAction()` memutuskan apa yang terjadi saat tombol diketuk: langsung buka, jelaskan dulu, atau minta izin.
+- `ActivityResultContracts.RequestPermission()` menerima hasil dialog sistem, lalu `permissionResultAction()` menerjemahkannya menjadi buka kamera, Snackbar (masih bisa dijelaskan), atau dialog Pengaturan (ditolak permanen).
+- `rememberLauncherForActivityResult` dipakai supaya hasilnya tidak bergantung pada `onRequestPermissionsResult` milik Activity.
+- Izin hanya diminta setelah pengguna menekan Kamera; aplikasi tidak pernah meminta izin saat dibuka.
 
 ### Mengapa galeri tidak membutuhkan izin?
 
-(Jelaskan dengan kata-katamu sendiri: delegasi, Photo Picker, content URI dan
-izin sementara, serta perbandingan dengan `READ_MEDIA_IMAGES`.)
+Photo Picker adalah bentuk delegasi: aplikasi tidak membuka galeri sendiri, tetapi menyerahkan pekerjaan itu ke aplikasi sistem (Photo Picker). Sistem yang menampilkan semua foto, pengguna yang memilih, dan aplikasi hanya menerima satu URI untuk foto yang dipilih — bukan akses ke seluruh galeri. URI itu datang bersama grant izin sementara (read URI permission) yang berlaku untuk proses tersebut, sehingga `ContentResolver.openInputStream()` bisa membacanya sekali untuk dikompres tanpa aplikasi pernah memegang izin media.
+
+Bandingkan dengan `READ_MEDIA_IMAGES` (Android 13+) atau `READ_EXTERNAL_STORAGE`: izin itu memberi akses ke seluruh koleksi foto pengguna, harus diminta lewat dialog runtime, dan mudah dicabut. Untuk kebutuhan "pilih satu foto profil", izin selebar itu tidak sepadan. Karena itu aplikasi ini hanya mendeklarasikan `CAMERA`; tidak ada izin media sama sekali.
 
 ### Hasil kompresi
 
-(Tulis contoh: resolusi asli, perkiraan memori jika didekode utuh, ukuran
-berkas setelah kompres.)
+Contoh dari pengujian di emulator, foto 3000x4000 px:
+
+- Jika didekode utuh: 3000 x 4000 x 4 byte = 45,8 MB di memori, walaupun berkas JPEG-nya hanya sekitar 200 KB.
+- `calculateInSampleSize(3000, 4000, 400)` menghasilkan 8, jadi tahap pertama hanya membaca header (`inJustDecodeBounds`), tahap kedua mendekode sekitar 375x500 piksel.
+- Setelah dipotong persegi di tengah, diperkecil ke 400 px, diputar sesuai EXIF, lalu dikompres JPEG kualitas 80: hasilnya 400x400 dan beberapa KB saja (foto asli biasanya 30-60 KB). Jauh di bawah batas 1 MB di `storage.rules`.
 
 ---
 
