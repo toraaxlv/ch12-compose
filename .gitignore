@@ -1,0 +1,14 @@
+# Berisi sdk.dir -- jangan di-commit
+local.properties
+
+# google-services.json BUKAN rahasia (lihat README) dan boleh di-commit.
+
+.gradle/
+build/
+app/build/
+.idea/
+*.iml
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/

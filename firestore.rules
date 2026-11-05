@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Autentikasi (sudah login) + otorisasi (pemilik data)
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Data yang ditulis harus berbentuk catatan yang sah.
+    // Validasi di aplikasi bisa dilewati; validasi di sini tidak.
+    function isValidNote() {
+      let note = request.resource.data;
+      return note.keys().hasAll(['title', 'content', 'createdAt', 'updatedAt', 'isPinned', 'tags'])
+          && note.title is string && note.title.size() > 0 && note.title.size() <= 200
+          && note.content is string
+          && note.createdAt is int && note.updatedAt is int
+          && note.isPinned is bool
+          && note.tags is list;
+    }
+
+    // TODO [T4.6] Dokumen profil users/{userId} belum punya aturan, sehingga
+    // penulisan photoUrl DITOLAK. Tambahkan:
+    //   - function isValidProfile(): hanya field 'photoUrl' (string URL, <= 2048 karakter)
+    //     dan 'photoUpdatedAt' (int). Petunjuk: keys().hasOnly([...]), matches('https?://.*')
+    //   - match /users/{userId} { allow read: pemilik; allow create, update: pemilik && isValidProfile() }
+
+    // Setiap pengguna hanya dapat mengakses catatannya sendiri.
+    // Path lain tidak punya aturan, sehingga otomatis DITOLAK.
+    match /users/{userId}/notes/{noteId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isValidNote();
+    }
+  }
+}
